@@ -243,7 +243,7 @@ cout << a + a << endl;
 ```
 
 # ADT Type Conversion
-If you do something like `short c = 5; if(c == 3) cout "yes";` the compiler will implicitly typecase 3 to a short, then compare. 
+If you do something like `short c = 5; if(c == 3) cout "yes";` the compiler will implicitly typecast 3 to a short, then compare. 
 If you declare a Rational a; then `if(a == 3)`, the compiler will implicitly convert 3 to a Rational using the default constructor.
 - Currently this will work because the default constructor will set denom to 1 if you give one parameter.
 - What if it has multiple constructors? You don't know which constructor the compiler will pick
@@ -262,4 +262,47 @@ explicit Rational(int num = 0, int denom = 1) throw (const char*);
 need to `if(a == (Rational)3)` 
 
 We should use explicit, when it is possible for the implementation to misinterpret a conversion outcome.
+
+# Part 4
+Private data representation advantages
+- Consistent data representation, no matter if you're writing the ADT or extending someone else's or using it as a downstream programmer
+- ensure legal values with accessors and mutators
+- nonmember functions can be friended if they have to access the private values
+
+## Helper Functions
+- Should be kept as private methods
+- Should be named such that it does not pollute the namespace; name it such that there is minimal chance for a conflict. For example, use underscore
+
+Helper function to Reduce the rational to lowest form
+
+add `void _reduce();` to the **private** section. Then add the implementation outside the class definition, like with other member functions.
+```cpp
+void Rational:: _reduce(){ // very basic algorithm...
+  int gcd;
+  for(int i = 0; (i <= num_) && (i <= denom_); i++){
+    if((num_ % i == 0) && (denom_ % i == 0)){
+      gcd = i;
+    }
+  }
+  num_ /= gcd;
+  denom_ /= gcd;
+}
+```
+add a call to `_reduce();` in the constructor and the setters. 
+- whenever a field is modified, it's possible it's not reduced.
+- don't need to reduce in arithmetic operators because they don't change inputs
+  - The output value of arithmetic operators will already be reduced, because the operator overrides call the constructor, and reduce will be called in the constructor. It can't access reduce function anyway, because it is non member.
+- Don't need in out stream, but do need in input stream, because input stream operator is setting a new num/denom. It can access reduce function because it is friended. 
+- in the input stream we need to do `r._reduce()` since it takes `const Rational& r` as the param.
+
+# Override and Final
+Should client programmers derive their own ADTs from mine?
+
+If no: Add `final` to the class definition. Prevent it from being derived/extended by another class
+
+If yes:
+- Add `virtual` to the functions you want to permit a child class to override their implementation. The child class can use `override`
+- Add `final` to the functions you don't want to allow child class to override.
+
+For example, `virtual int getNum() const;`  allows the child object to override its implementation. `final void setNum(const int num);` will prohibit the child object from overriding its implementation. (This is a demonstration, not a design choice) 
 
