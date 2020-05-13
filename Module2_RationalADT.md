@@ -242,6 +242,35 @@ cin >> a;
 cout << a + a << endl;
 ```
 
+#### istream clarification
+
+Assume that instream buffer comes in like this:
+```
+buffer top -> [ 3 (int) ]
+              [ "/" (char) ]
+              [ 7 (int) ]
+              [ .... (some other data awaiting to be popped) ]
+```
+Then, when the first parameter is taken from the buffer (through sin >> r.numerator_), the top pointer of the buffer will be moved to the next item:
+```
+              [ 3 (int) ] >> r.numerator_  //popped from the buffer to your designated variable, type-matched
+buffer top -> [ "/" (char) ]
+              [ 7 (int) ]
+              [ .... (some other data awaiting to be popped) ]
+```
+And then the slash character (sin >> slash) :
+```
+              [ "/" (char) ] >> slash   //popped from buffer, type-matched
+buffer top -> [ 7 (int) ]
+              [ .... (some other data awaiting to be popped) ]
+```
+Finally, the denominator (sin >> r.denominator_):
+```
+							[ 7 (int) ] >> r.denominator_      //popped, type-matched
+buffer top -> [ .... (some other data awaiting to be popped) ]
+```
+If I provide a variable of different type and bit-size, the corresponding number of bits will be popped off from the buffer, and type-casted into the corresponding data type (even if the data may not make sense in its casted type).
+
 # ADT Type Conversion
 If you do something like `short c = 5; if(c == 3) cout "yes";` the compiler will implicitly typecast 3 to a short, then compare. 
 If you declare a Rational a; then `if(a == 3)`, the compiler will implicitly convert 3 to a Rational using the default constructor.
