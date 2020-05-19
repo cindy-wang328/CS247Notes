@@ -86,3 +86,121 @@ Make Rational immutable
 
 
 ![Test Image 2](https://github.com/cindy-wang328/CS240-notes/blob/master/screenshots/Screen%20Shot%202020-05-18%20at%2011.48.12%20PM.png)
+
+
+# Information Hiding
+
+Hide private data members from the object implementation.
+
+What is not private implementation (Exposed implementation)
+- clear view of private fields in the header file
+- why leave these to be visible, if they are intended to not be explicitly changed?
+  - Right now in the rational class the private fields are exposed to the programmer in the class definition. They can see the fields by scrolling through the code
+
+## Private Implementation
+Encapsulate all private data members in a separate struct
+- maybe even put it in a separate header file
+```cpp
+struct PImpl{
+  // private representation of a Rational
+  int num_;
+  int denom_;
+}
+...
+private:
+  //int num_; int denom_; 
+  PImpl* rat_; // pointer to a rational private implementation
+  void _reduce();
+```
+Change the constructor, reduce function, getters, instream >>
+```cpp
+Rational::Rational(int num, int denom) throw (const char*){
+  rat_ = new PImpl;
+  rat_-> num_ = num;
+  rat_ -> denom_ = denom;
+  ...
+}
+void Rational:: _reduce(){
+  // replace num_ and denom_ with rat_ -> num_ and rat_ -> denom_ 
+  for(int i - 1; i <= rat_ -> num_ && i <= rat_ -> denom_; i++){...}
+}
+int Rational::getNum() const{
+  return rat_ -> num_;
+} // same with getDenom()
+istream& operator>> (istream& sin, Rational& r){
+  char slash;
+  sin >> r.rat_->num_ >> slash >> r.rat_ -> denom_; // don't forget the r.rat_ 
+  return sin; 
+}
+```
+We do not need to change the +-\*/ arithmetic operators because they are nonmember and don't need to access the private fields.
+
+# Singleton Design Pattern
+Exactly one object of the ADT, for the entire runtime of the program.
+- Player in a single player game
+- Global time
+- Game controller (maps hardware to the game), game settings (won't need 2 sets of settings)
+
+ex. Basic Player (Entity) ADT: Regular implementation
+```cpp
+class Player{
+  public:
+    Player(int val=0){val_ = val;}
+    int getVal(){return val_;}
+    void setVal(int val){val_ = val;}
+  private:
+    int val_;
+}
+int main(int argc, char** argv){
+  Player* p = new Player();
+  cout << p->getVal() << endl; // 0
+  p->setVal(2);
+  cout << p->getVal() << endl; // 
+  // but you can create multiple instances of player! then when you move your mouse all of these will move
+  Player* p2 = new Player(10);
+  Player* p3 = new Player(20);
+  return 0;
+}
+```
+
+Turning an ADT object into Singleton
+1. Create a static instance in private scope 
+2. Move constructor to private scope
+3. Static accessor in public scope
+4. Prohibit copy and assign
+5. Initialize before runtime
+
+```cpp
+class Player{
+  // don't overload copy and assign operators
+  public:
+    // Step 3: Static AC to the single instance
+    static Player* inst(){
+      return &pl_; 
+    }
+    // ACs/MTs to the PFs
+    int getVal(){return val_;}
+    void setVal(int val){val_ = val;}
+  private:
+    // step 1
+    static Player pl_; // the only instance 
+    // static = (readily available/allocated in memory when program starts)
+    // dont need to allocate on the heap
+
+    // step 2: move ctor
+    Player(int val=0){val_ = val;}
+    int val_;
+}
+// step 5: initialize outside the class, also outside main function
+// Basically a Global Variable
+//Tell "pl" to call its constructor and feed value 42
+Player Player::p(42);
+
+int main(int argc, char** argv){
+  //Player* p = new Player();  will not compile
+  cout << Player::instance() -> getVal() << endl; // 42
+  Player::instance() -> setVal(20);
+  cout << Player::instance() -> getVal() << endl; // 20
+  return 0;
+}
+```
