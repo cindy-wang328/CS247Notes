@@ -204,3 +204,43 @@ int main(int argc, char** argv){
   return 0;
 }
 ```
+## Piazza 
+Question: 
+```cpp
+public:
+static Player* instance() {
+	return &pl_;
+}
+
+...
+private:
+static Player pl_;
+```
+Why do we need this and what would happen if the keyword wasn't there?
+
+
+The first static keyword is applied to a function. A static function is a function that can be called without an object of the class. A static function can only access the static data members, as it is independent of any object of the class. A static function can be called using ClassName::functionName(). If the static keyword is not there, we would need an instance of the class to access the function member. However, since we made the constructor private in Step 2, our user has no way to create an instance of the class, thus unable to access the instance() function member and we are stuck. We need to call instance() to obtain an object, but the instance() method requires an object to be used.
+
+As for the second static keyword, it is applied to a data member. If you can recall from CS138, Prof Migod discussed how static data members are associated with a class and lives in another castle away from stack and heap.
+```
+|_____________________________________________
+|
+|
+|
+|Heap
+|
+|
+|
+|____________________________________________
+|
+|Stack
+|
+|____________________________________________
+|
+|Global and static variables
+|____________________________________________
+|
+|Code
+|____________________________________________
+```
+There exists only one pl_ associated with the Player class, and static functions have access it, because it is also independent of any object. If this static keyword doesn't exist, our instance() function has no way to figure out which pl_ we are referring to, as each object would have its own pl_ field. This is also why static functions can only access static data members.
