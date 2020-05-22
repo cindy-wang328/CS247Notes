@@ -71,7 +71,7 @@ comp_                       |
 ptr_ -----> Referenced Data |
 simp_                       |
 ```
-1. A new local copy instance implicitly instantiated in assignment function, based on the constructor of myClass; this is returned at the end by reference (`*this`)
+1. A new copy instance implicitly instantiated in assignment function, based on the constructor of myClass; this is returned at the end
 2. all non ptrs are copied from the source
 3. ptr member of the *local copy instance implicitly created by assignment operator* is deallocated
 	- ref data is not a fixed size, it might be a dynamic array. default size definied by the constructor of myClass might not be the right size to hold the reference data
@@ -99,13 +99,13 @@ Problem: if exception occurs when reallocating `this->ptr_ = new type[m.psize]`,
 - it is bad to hold onto a ref of a deleted memory section; you might pass it to a destructor, but the heap can't delete it because it "didn't belong to you" in the first place.
 - the memory might have been allocated to other programs, and the toxic pointer can change it (will cause race conditions)
 
-## copy swap
+## Copy swap idiom
 Change input parameter to PBV; now new copy of source on stack
 
 Once it is PBV, the cctr is called to make copy of the source on the stack. At the end of the function, this copy on the stack is deleted. 
 - the operation copying the source to the stack, with PBV, is safer because an improperly allocated object can be deleted properly with the dtor. it has direct access to the dtor
 
-### swap 
+### Swap 
 swap pointer member of the local version, and the source on the stack
 - just like attempt 1, all non-ptr members are put into the local copy
 - now the source (stack) copy points to something probably undefined
@@ -132,4 +132,123 @@ Advantage: If exception occurs when using CCTR to copy the source onto the stack
 - it is possible to `swap(*this, m); return *this'` (STL library swap; the overhead of calling STL might invoke more actions than you think)
 - non copyswap is faster. if you have very low chance of running into memory issues, maybe don't need to copyswap. meanwhile if you have low memory available, it is likely for more exceptions, so you should use it.
 
+### Textbook example (item 11: handle assignment to self in operator=)
+#### Assignments to self:
+- `Widget w; w=w;`
+- `a[i]=a[j];` if i = j
+- `*px=*py;` if px and py point to the same thing
+- `void f(const Base& b, Derived* d)` b and d might be the same object
+In general, if there's pointers to multiple objects of the same type / same hierarchy, we need to consider what if the objects are the same
 
+For example you have a `Bitmap *pb;` as a PF in the Widget class
+```cpp
+Widget& Widget:: operator=(const Widget& rhs){
+	delete pb;
+	pb = new Bitmap(*rhs.pb);
+	return *this;
+}
+```
+`*this` and `rhs` could be the same object. If they are the same, `delete` will destroy the bitmap for the current object and rhs. So the Widget will have ptr to deleted object.
+- Can add identity test `if(this == &rhs) return *this;`
+
+#### Making operator= exception safe
+One way is to `Bitmap *po = pb; pb = new Bitmap(*rhs.pb); delete po;` so that if `new Bitmap` exceptions, the Widget doesn't change.
+- Can do `swap(*this, rhs); return *this;` if rhs is passed by value
+
+## Move constructor
+Does same thing as copy (create a new object whose value is equal to existing) but **does not preserve value of existing object**
+
+Calls move constructor upon f2 return, to initialize n. It returns the inst. through the stack. The = makes a copy of the values on the stack to the new instance n. compiler needs to construct n, copy value of whatever is on the stack, with the move constructor. the source will be cleared out anyway, so it doesnt care about preserving the value. compiler will use move constructor. 
+
+```cpp
+class Money{...};
+Money f2(); // function returning ADT
+int main(){
+	Money m; // Calls constructor
+	Money n = f2(); // Calls move constructor upon f2 return
+}
+```
+### Overload
+Input parameter is a **rvalue reference**, tell compiler that this constructor is move. Don't need to care about the integrity of the source content, as long as the value you're copying to the new instance is correct
+
+
+```cpp
+Money(Money &&m){
+	amt_ = m.amt_; // copy value
+	m.amt_ = 1234; // doesnt matter
+}
+```
+Default
+- Primitive, pointer: bitwise/shallow copy
+- Member object: member move/copy constructor
+- inherited: base class m/c ctr
+
+Deep copy is pointless
+
+ The source gets deleted, since it was on the stack. No deep copy required.  Deep copy creates 2 copies of reference data, but we don't care about the source contents since the source content gets destroyed (was on stack). Don't need copy swap either 
+
+## Move Assignment
+Similar to MCtr but destination of move already exists, and also doesn't preserve the source integrity.
+
+Same default behavior as MCtr
+
+```cpp
+int main(){
+	Money m, p; // calls CTR
+	p = Money(); // calls CTR then Move assignment
+
+```
+- m and p are defined and initialized
+- for p, ask for a new initialization; the ctr will be called to create new instance. move that inst over to the existing instance p. 
+
+```cpp
+Money& operator= (Money &&m){
+	this->amt_ = m.amt_;
+	m.amt_ = 1234; // doesnt matter
+	return *this;
+}
+```
+**pay attention to lvalue vs rvalue pass by reference**
+
+# Rule of 5
+### If you overloaded one special member fn, you should overload all of them
+What does compiler do if programmer overloads some, but not all, of the special member functions
+
+Compiler prefers copy instead of move. Move doesn't care about integrity of source - can't use move to copy, but can use copy to move
+
+1. Nothing: All compiler default (CD)
+2. Any Ctor: Default ctor not declared (ND), all others CD
+3. Default Ctor: all others CD
+4. Dtor: all CD except move ctor and move assign are ND
+5. Copy Ctor: Default ctor ND, MCtr and MAsn ND, Dtor and Copy Asn CD
+	- The default ctor will be replaced by the copy ctor
+6. Copy Asn: All CD except Move ctor and asn ND
+7. Move Ctor: default ctor ND, move asn ND, dtor CD, and copy ctor and asn *deleted*
+	- copy is replaced by move
+8. Move Asn: copy ctor/asn deleted, move ctor ND, others CD
+
+# Equality operator
+Shallow equality: does not compare the referenced data
+
+Deep equality: look at the values of the non pointer members, but look at the referenced data for pointer members (*ptr1 == *ptr2) instead of the pointer address themselves
+- No compiler default equality operators
+- should compare member by member 
+
+```cpp
+class myC{...};
+bool operator==(const myC &m, const myC &n){
+	// call the base class's operator== 
+	if(!(Base:: operator==(m, n))) return false; 
+	// primitives
+	if(m.simp_ != n.simp_) return false;
+	// complex data member (objects): call their operator==
+	if(!(m.comp_ == n.comp_)) return false;
+	// Pointers
+	// If both pointers are null, return true
+	if(!m.ptr_ && !n.ptr_) return true;
+	// if only one is null
+	if(!m.ptr_ || !n.ptr_) return false;
+	// check reference data
+	return *m.ptr_ == *n.ptr_;
+}
+```
