@@ -252,3 +252,86 @@ bool operator==(const myC &m, const myC &n){
 	return *m.ptr_ == *n.ptr_;
 }
 ```
+# Rational class updates
+Test cases: Assume f takes Rational as param (copies onto stack), f2 takes in and returns instances of Rational (from stack into a variable) 
+- there is one pointer member (the PImpl)
+```cpp
+void f(Rational r){return;}
+void f2(Rational r) {return r;}
+Rational a;
+Rational b{a}; // Copy ctor
+Rational c = a; // cctr also
+f(c);
+b=c; // copy asn
+Rational d = f2(c); // move ctor, actually more than one SMF fill be called 
+b = f2(c); // move asn
+```
+We defined only a def ctor so the compiler will supply the other 5, but we should define the other 5 for examples and deep copy
+
+## Destructor
+Mandatory if there are pointer members. Delete the referenced data on the heap to prevent memory leak
+`~Rational();`
+```cpp
+Rational::~Rational(){
+	if(rat_ != NULL){
+		delete rat_;
+	}
+}
+```
+## Copy ctor
+`Rational(const Rational&r);`
+```cpp
+Rational:: Rational(const Rational&r){
+	rat_ = new PImpl;
+	rat_ -> num_ = r.rat_ -> num_;
+	rat_ -> denom_ = r.rat_ -> denom_; // Allocate another PImpl and copy the values of the input.
+}
+```
+## Copy asn
+(no copy swap for now)
+
+the operator= by default creates a local container copy of the ADT instance on the stack, then at the end we return it through the reference back to the lvalue of the operator (what's on the LHS of the =)
+
+sometimes, the pfs are not fixed size, so we can't trust the size of the temporary container for the reference data and the pointer member. the default initialized size of the PF might not be correct
+
+`Rational& operator=(const Rational&r);`
+```cpp
+Rational:: Rational& operator=(const Rational&r){
+	delete rat_;
+	rat_ = new PImpl; // redundant, but usually done if dynamic members
+	rat_ -> num_ = r.rat_ -> num_;
+	rat_ -> denom_ = r.rat_ -> denom_;
+
+	return *this; // return the local container instance
+}
+```
+## Move ctor
+`Rational(Rational &&r);`  rvalue &&
+
+We can mess around with the input parameter since it is move
+
+Use rvalue, because the lvalue will mess with the source instance one hierarchy level up, and pass by value will make an additional call to copy ctor. 
+
+```cpp
+Rational:: Rational(Rational &&r){
+	// do copy swap
+	// copy is already done with the rvalue (you can change r)
+	rat_ = new PImpl; // need to new because you're creating another instance, target doesn't exist yet
+	//swap
+	PImpl * temp = this -> rat_; // temp pointer to save the auto allocated pointer to the ref data 
+	this->rat_ = r.rat_; // redirect the local container's ptr to the source object's ref data
+	r.rat_ = temp; // swapped the auto generated ptr member into the source
+
+}
+```
+## Move asn
+`Rational& operator= (Rational &&r); `// rvalue 
+```cpp
+Rational& Rational:: operator= (Rational &&r){
+	// first 3 are same as move stor
+	PImpl * temp = this -> rat_; 
+	this->rat_ = r.rat_; 
+	r.rat_ = temp; 
+	return *this; // r is popped from stack, so it's ok to have bad pointers r.rat_
+}
+```
