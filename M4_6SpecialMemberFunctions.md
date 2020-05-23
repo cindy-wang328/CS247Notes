@@ -253,7 +253,7 @@ bool operator==(const myC &m, const myC &n){
 }
 ```
 # Rational class updates
-Test cases: Assume f takes Rational as param (copies onto stack), f2 takes in and returns instances of Rational (from stack into a variable) 
+### Test cases: Assume f takes Rational as param (copies onto stack), f2 takes in and returns instances of Rational (from stack into a variable) 
 - there is one pointer member (the PImpl)
 ```cpp
 void f(Rational r){return;}
@@ -261,11 +261,13 @@ void f2(Rational r) {return r;}
 Rational a;
 Rational b{a}; // Copy ctor
 Rational c = a; // cctr also
-f(c);
+f(c); // cctr
 b=c; // copy asn
-Rational d = f2(c); // move ctor, actually more than one SMF fill be called 
-b = f2(c); // move asn
+Rational d = f2(c); // copy then move ctor called
+b = f2(c); // move asn (copy ctor, move ctor, then move assignment
 ```
+ex. for `Rational d = f2(c)`, cctr first called from pass by value into f2, then mctr called to move it into d.
+
 We defined only a def ctor so the compiler will supply the other 5, but we should define the other 5 for examples and deep copy
 
 ## Destructor
