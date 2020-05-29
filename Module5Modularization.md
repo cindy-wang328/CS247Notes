@@ -85,7 +85,8 @@ Use `#ifndef C_H #define C_H .... #endif`
 
 ### Circular dependencies, Forward declaration
 - if E.h includes F.h, and F.h includes E.h  -> circular
-Forward declaration: inside E.h, put `class F;` and inside F.h, put `class E;`. Then the compiler will know to break the loop even if the #includes are still there
+- Forward declaration: inside E.h, put `class F;` and inside F.h, put `class E;`. 
+- Then the compiler will know to break the loop even if the #includes are still there
 
 ### Namespace etiquette
 - Never `using namespace` in a header file
