@@ -17,6 +17,8 @@ Linker is evil? the linker, in the black box IDEs, use a computer generated
 makefile and linking file, and sometimes these linkers have bugs. 
 Sometimes you have to make a new project and copy over the files. The linker messed up the linking file and makefile in the background
 
+![compile/assemble flowchart](https://github.com/cindy-wang328/CS240-notes/blob/master/screenshots/Screen%20Shot%202020-05-29%20at%205.09.54%20PM.png)
+
 ## Program decomposition
 This file is too big:
 ```cpp
@@ -44,7 +46,7 @@ int main(){...}
 Separate into A.cpp, B.cpp, and main.cpp: A contains the PimplA, class A{}, A::getter(), etc. Main.cpp has only the main function. 
 
 Problem: class A and B must be **defined before main() to be used in main**
-
+![decompose diagram](https://github.com/cindy-wang328/CS240-notes/blob/master/screenshots/Screen%20Shot%202020-05-29%20at%205.15.48%20PM.png)
 ### Method 1: share the variables using non-local declaration, using `extern int b=35` 
 
 Extern keyword: 
@@ -59,6 +61,7 @@ cout << B; // 35
 B.cpp:
 extern int b=35;
 ```
+
 ### Method 2: header file
 - in `A.h` (same name as the cpp file), put the declarations
   - `struct PimplA{}; class A{};`
@@ -79,6 +82,7 @@ extern int b=35;
 - D.cpp includes D.h
 - main.cpp includes C.h and D.h
 - then C.h has a duplicated inclusion in D.h and main.cpp, copy and pasted twice. It will not compile.
+![duplicate diagram](https://github.com/cindy-wang328/CS240-notes/blob/master/screenshots/Screen%20Shot%202020-05-29%20at%206.31.45%20PM.png)
 Use `#ifndef C_H #define C_H .... #endif`
 - if C_H is not defined, then everything from #define C_H to #endif, copy and paste it into wherever included "C.h"
 - Then if main.cpp #include "C.h" then #include "D.h", in the first include, C_H flag is already defined, so when compiler sees the #include "C.h" inside `D.h`, it will not define it again. 
@@ -87,7 +91,7 @@ Use `#ifndef C_H #define C_H .... #endif`
 - if E.h includes F.h, and F.h includes E.h  -> circular
 - Forward declaration: inside E.h, put `class F;` and inside F.h, put `class E;`. 
 - Then the compiler will know to break the loop even if the #includes are still there
-
+![header diagram](https://github.com/cindy-wang328/CS240-notes/blob/master/screenshots/Screen%20Shot%202020-05-29%20at%206.34.39%20PM.png)
 ### Namespace etiquette
 - Never `using namespace` in a header file
   - someone can accidentally include a namespace they don't know about when they include your header
