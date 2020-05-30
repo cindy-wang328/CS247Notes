@@ -94,3 +94,26 @@ Use `#ifndef C_H #define C_H .... #endif`
 - Never `using namespace` before the `#include` directives
   - some header files have their own visibility of their own namespaces, it will affect the set of names visible in the header files
   - can mess up the preprocessor
+
+
+# Update Rational ADT
+341 lines in the Rational class!
+
+The `struct PImpl{}` and `class Rational final{}` declarations should be in the header file `Rational.h`. Nonmember function prototypes also go in the header file (`Rational operator+(Rational a, Rational b);`)
+- We moved the implementations outside the class declaration in order to allow modularization.
+- `Rational.h` should not have `using namespace std`
+  - but you still need to `#include <iostream>`
+  - if you took out the `using namespace std`, have to put `std::istream` and `std::ostream` 
+  
+Implementations of the functions (ex. constructors) should stay in the source cpp file `Rational.cpp`
+- `#include "Rational.h"` at the top, because "" indicates a path is provided to locate the file, while <> indicates the header file is in the default library locations from the environmental variables
+- including iostream is optional, because it is already included from Rational.h. iostream library has header guard, so it is fine either way
+
+
+Main function goes into the "client program", a separate cpp file
+- Put all 3 files in the same folder
+- Compile with `g++ -o prog main.cpp Rational.cpp`; this tells compiler to compile them together into a program and name it "prog"
+
+Sometimes we put PIMPl into a separate header
+- cut and paste `struct PImpl{...};` into `PImpl.h`
+- #include "PImpl.h" in Rational.h
