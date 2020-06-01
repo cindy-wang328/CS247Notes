@@ -66,9 +66,59 @@ Obvious build orders and source file dependencies can be omitted, the builder al
 - Most build rules are easy predictable (`g++ -g -Wall -c main.cpp`) 
 With implicit rules, the makefile will be
 ```
-prog: main.o A.o B.o
+prog: main.o A.o B.o (Default target and build rule) 
   g++ -g -Wall main.o A.o B.o -o prog
+main.o: A.h (Non obvious dependencies)  
+A.o: B.h
+B.o: A.h
+```
+but this is still inefficient if there's 100 files 
+
+## Build Macro 
+```cpp
+#build macros
+CXX = g++                 # default compiler
+CXXFLAGS = -g -Wall       # compiler option flags
+OBJECTS = main.o A.o B.o  # objects to be linked, in order
+EXEC = prog               # output filename
+
+${EXEC}: ${OBJECTS}
+  ${CXX} ${CXXFLAGS} ${OBJECTS} -o ${EXEC}
 main.o: A.h 
 A.o: B.h
 B.o: A.h
+```
+
+## Clean Target 
+Sometimes you want to delete all the object and executable files and completely recompile the project. 
+```
+clean:
+  rm -rf ${OBJECTS} ${EXEC}
+```
+
+## Auto Dependency Derivation (-MMD)
+Add `-MMD` into the `CXXFLAGS`. Then the auto builder will go into the header files and try to figure out dependencies. It will create `.d` files. 
+- `DEPENDS = ${OBJECTS: .o = .d}` to substitute .o with .d for dependency files
+- Don't need a manual dependency list
+- Add `-include ${DEPENDS}`
+  - this reads the .d files for rerunning auto dependencies
+- Also clean the dependencies: `rm -rf ${DEPENDS} ${OBJECTS} ${EXEC}` in the clean: part
+
+# Makefile for Rational ADT
+Copy everything into 1 folder, then `gedit makefile` (no extension)
+```
+# Build macros
+CXX = g++
+CXXFLAGS = -Wall -MMD
+OBJECTS = main.o Rational.o
+DEPENDS = ${OBJECTS:.o=.d}
+EXEC = prog
+
+${EXEC}: ${OBJECTS}
+  ${CXX} ${CXXFLAGS} ${OBJECTS} -O ${EXEC} 
+
+clean:
+  rm -rf ${DEPENDS} ${OBJECTS} ${EXEC}
+  
+-include ${DEPENDS}
 ```
