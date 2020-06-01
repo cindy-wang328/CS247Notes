@@ -125,3 +125,6 @@ clean :
 for example, `main.d` is `main.o: main.cpp Rational.h PImpl.h`. `Rational.d` is `Rational.o Rational.cpp Rational.h PImpl.h` 
 - to force make to recompile when testing, add some comments to Rational.cpp because it checks timestamps and only recompiles when code is changed
 - `make clean` command will run the clean command. 
+
+# Summary
+![Summary Slide](https://github.com/cindy-wang328/CS247Notes/blob/master/screenshots/Screen%20Shot%202020-06-01%20at%202.25.45%20AM.png)
