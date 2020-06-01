@@ -114,11 +114,14 @@ OBJECTS = main.o Rational.o
 DEPENDS = ${OBJECTS:.o=.d}
 EXEC = prog
 
-${EXEC}: ${OBJECTS}
+${EXEC} : ${OBJECTS}
   ${CXX} ${CXXFLAGS} ${OBJECTS} -O ${EXEC} 
 
-clean:
+clean :
   rm -rf ${DEPENDS} ${OBJECTS} ${EXEC}
   
 -include ${DEPENDS}
 ```
+for example, `main.d` is `main.o: main.cpp Rational.h PImpl.h`. `Rational.d` is `Rational.o Rational.cpp Rational.h PImpl.h` 
+- to force make to recompile when testing, add some comments to Rational.cpp because it checks timestamps and only recompiles when code is changed
+- `make clean` command will run the clean command. 
